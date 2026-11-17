@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 版本：PWA外殼_20261117_1118（1118：啟動畫面與登入頁一致——院徽 logo＋橘色「轉診待命系統」；logo 改透明底；0921：替登記頁保存「記住我」憑證） -->
+<!-- 版本：PWA外殼_20261117_2328（2328：App 圖示換成環狀箭頭＋十字＋心電圖（圖示原檔.jpg）；1130：接手報表下載——登記頁傳來 PDF／Excel，顯示「開啟檔案」按鈕；1118：啟動畫面與登入頁一致——院徽 logo＋橘色「轉診待命系統」；logo 改透明底；0921：替登記頁保存「記住我」憑證） -->
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
@@ -26,11 +26,24 @@
   #splash img.logo { width:min(360px,85vw); height:auto; }
   #splash h1 { margin:0; font-size:22px; font-weight:700; letter-spacing:.15em; color:#c4741f; }
   #msg { color:var(--muted); font-size:14px; min-height:1.4em; }
+  /* 報表下載：要使用者點一下才開啟，手機瀏覽器不允許非點擊觸發的下載 */
+  #fileBox { position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom,0px)); background:#fff; border-radius:14px;
+    box-shadow:0 8px 30px rgba(0,0,0,.25); padding:14px; display:none; flex-direction:column; gap:10px; z-index:10; }
+  #fileBox.show { display:flex; }
+  #fileName { font-size:14px; color:var(--ink); word-break:break-all; }
+  #fileBox .row { display:flex; gap:10px; }
+  #fileBox button { flex:1; border:0; border-radius:10px; padding:12px; font-size:16px; font-weight:600; }
+  #fileOpen { background:#b8661a; color:#fff; }
+  #fileClose { background:#fbf1e6; color:#8a4b0f; }
   #retry { display:none; border:0; background:var(--orange); color:#fff; font-size:16px; padding:10px 22px; border-radius:10px; }
 </style>
 </head>
 <body>
 <iframe id="app" title="轉診待命系統" referrerpolicy="no-referrer"></iframe>
+<div id="fileBox" role="dialog" aria-label="報表檔案">
+  <div id="fileName"></div>
+  <div class="row"><button id="fileOpen" type="button">開啟檔案</button><button id="fileClose" type="button">關閉</button></div>
+</div>
 <div id="splash" role="status">
   <img class="logo" src="logo.png" alt="雲林長庚紀念醫院">
   <h1>轉診待命系統</h1>
@@ -86,9 +99,32 @@
         localStorage.setItem(KEY, JSON.stringify({ phone: String(d.cred.phone), tok: d.cred.tok }));
       } else if (d.standby === 'clear') {
         localStorage.removeItem(KEY);
+      } else if (d.standby === 'file' && d.b64 && d.name) {
+        showFile(d);
       }
     } catch (x) {}
   });
+
+  // ---------- 報表下載 ----------
+  var FILE = null;
+  var box = document.getElementById('fileBox');
+  function showFile(d) {
+    FILE = { name: String(d.name).replace(/[\\/:*?"<>|]/g, '_'), mime: String(d.mime || 'application/octet-stream'), b64: String(d.b64) };
+    document.getElementById('fileName').textContent = '報表已產生：' + FILE.name;
+    box.classList.add('show');
+  }
+  document.getElementById('fileOpen').addEventListener('click', function () {
+    if (!FILE) return;
+    var bin = atob(FILE.b64), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    var url = URL.createObjectURL(new Blob([u], { type: FILE.mime }));
+    var a = document.createElement('a');
+    a.href = url; a.download = FILE.name; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    box.classList.remove('show'); FILE = null;
+  });
+  document.getElementById('fileClose').addEventListener('click', function () { box.classList.remove('show'); FILE = null; });
 
   // 離線時也能開出外殼與提示，不是一片空白
   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
