@@ -1,6 +1,6 @@
-// 版本：PWA外殼_20261117_0921
+// 版本：PWA外殼_20261117_1118
 // 只快取外殼本身（畫面、圖示），讓沒網路時也能打開並顯示提示；待命資料一律即時向 GAS 取得，不快取
-var CACHE = 'shell-20261117-0921';
+var CACHE = 'shell-20261117-1118';
 var FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'logo.png'];
 
 self.addEventListener('install', function (e) {

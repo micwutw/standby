@@ -1,10 +1,10 @@
 <!doctype html>
-<!-- 版本：PWA外殼_20261117_0921（搭配 GAS Code_20261117_0921.gs／Me_20261117_0921.html；0921：替登記頁保存「記住我」憑證） -->
+<!-- 版本：PWA外殼_20261117_1118（1118：啟動畫面與登入頁一致——院徽 logo＋橘色「轉診待命系統」；logo 改透明底；0921：替登記頁保存「記住我」憑證） -->
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>轉診待命</title>
+<title>轉診待命系統</title>
 <meta name="theme-color" content="#d98c3b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -15,26 +15,25 @@
 <meta name="apple-mobile-web-app-title" content="轉診待命">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
-  :root { --orange:#d98c3b; --ink:#1d2733; --muted:#5d6b7a; --bg:#ffffff; }
+  :root { --orange:#d98c3b; --ink:#1d2733; --muted:#5d6b7a; --bg:#f6f4f1; }
   html, body { margin:0; height:100%; background:var(--bg); font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif; color:var(--ink); }
   /* 狀態列下方留安全區，iframe 佔滿其餘空間 */
   body { padding-top:env(safe-area-inset-top,0px); box-sizing:border-box; }
   #app { display:block; width:100%; height:100%; border:0; }
-  #splash { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:24px; text-align:center; transition:opacity .3s; }
+  #splash { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; transition:opacity .3s; }
   #splash.hide { opacity:0; pointer-events:none; }
-  #splash img.mark { width:96px; height:96px; border-radius:22px; }
-  #splash img.logo { width:min(300px,80vw); height:auto; }
-  #splash h1 { margin:0; font-size:20px; }
+  /* 與 GAS 登入頁相同：logo 在上、橘色系統名稱在下 */
+  #splash img.logo { width:min(360px,85vw); height:auto; }
+  #splash h1 { margin:0; font-size:22px; font-weight:700; letter-spacing:.15em; color:#c4741f; }
   #msg { color:var(--muted); font-size:14px; min-height:1.4em; }
   #retry { display:none; border:0; background:var(--orange); color:#fff; font-size:16px; padding:10px 22px; border-radius:10px; }
 </style>
 </head>
 <body>
-<iframe id="app" title="轉診跟車待命" referrerpolicy="no-referrer"></iframe>
+<iframe id="app" title="轉診待命系統" referrerpolicy="no-referrer"></iframe>
 <div id="splash" role="status">
-  <img class="mark" src="icon-192.png" alt="">
-  <h1>轉診跟車待命</h1>
   <img class="logo" src="logo.png" alt="雲林長庚紀念醫院">
+  <h1>轉診待命系統</h1>
   <div id="msg">載入中…</div>
   <button id="retry" type="button">重新載入</button>
 </div>
