@@ -1,0 +1,99 @@
+<!doctype html>
+<!-- 版本：PWA外殼_20261117_0921（搭配 GAS Code_20261117_0921.gs／Me_20261117_0921.html；0921：替登記頁保存「記住我」憑證） -->
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>轉診待命</title>
+<meta name="theme-color" content="#d98c3b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<!-- iPhone：加入主畫面後全螢幕開啟、用這個圖示與名稱 -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="轉診待命">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+  :root { --orange:#d98c3b; --ink:#1d2733; --muted:#5d6b7a; --bg:#ffffff; }
+  html, body { margin:0; height:100%; background:var(--bg); font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif; color:var(--ink); }
+  /* 狀態列下方留安全區，iframe 佔滿其餘空間 */
+  body { padding-top:env(safe-area-inset-top,0px); box-sizing:border-box; }
+  #app { display:block; width:100%; height:100%; border:0; }
+  #splash { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:24px; text-align:center; transition:opacity .3s; }
+  #splash.hide { opacity:0; pointer-events:none; }
+  #splash img.mark { width:96px; height:96px; border-radius:22px; }
+  #splash img.logo { width:min(300px,80vw); height:auto; }
+  #splash h1 { margin:0; font-size:20px; }
+  #msg { color:var(--muted); font-size:14px; min-height:1.4em; }
+  #retry { display:none; border:0; background:var(--orange); color:#fff; font-size:16px; padding:10px 22px; border-radius:10px; }
+</style>
+</head>
+<body>
+<iframe id="app" title="轉診跟車待命" referrerpolicy="no-referrer"></iframe>
+<div id="splash" role="status">
+  <img class="mark" src="icon-192.png" alt="">
+  <h1>轉診跟車待命</h1>
+  <img class="logo" src="logo.png" alt="雲林長庚紀念醫院">
+  <div id="msg">載入中…</div>
+  <button id="retry" type="button">重新載入</button>
+</div>
+<script>
+  // GAS 部署網址（與派任單 表單JS 的 GAS_URL 相同）；重新部署成新網址時只要改這一行
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbzF51OdZM44naHSe0DwNJtS2XdMQAvT7PbL_BG0ezh5F0vaNVyAVAB9vjFGq1858NI/exec';
+  // 外殼只開「我的待命」登記頁；查詢頁要靠派任單上的當日 QR 才看得到姓名，不放進 App
+  var START = GAS_URL + '?page=me';
+
+  var frame = document.getElementById('app');
+  var splash = document.getElementById('splash');
+  var msg = document.getElementById('msg');
+  var retry = document.getElementById('retry');
+  var timer;
+
+  function load() {
+    retry.style.display = 'none';
+    splash.classList.remove('hide');
+    if (!navigator.onLine) { fail('目前沒有網路，請連上網路後再試。'); return; }
+    msg.textContent = '載入中…';
+    // Google Apps Script 第一次開啟常要 3–8 秒，超過 20 秒才當成失敗
+    clearTimeout(timer);
+    timer = setTimeout(function () { fail('連線較慢或無法連到 Google，請稍後再試。'); }, 20000);
+    frame.src = START + '&t=' + Date.now();
+  }
+  function fail(t) { clearTimeout(timer); msg.textContent = t; retry.style.display = 'inline-block'; }
+
+  frame.addEventListener('load', function () {
+    if (!frame.src) return;
+    clearTimeout(timer);
+    splash.classList.add('hide');
+  });
+  retry.addEventListener('click', load);
+  window.addEventListener('online', function () { if (!splash.classList.contains('hide')) load(); });
+
+  // ---------- 記住我 ----------
+  // 登記頁在 Google 的網域裡，iPhone 對嵌入頁面的儲存常會清掉；改由外殼（主畫面 App 本身的網站）代存。
+  // 只回應來自 Google Apps Script 頁面（googleusercontent.com）的要求
+  var KEY = 'standby_remember';
+  function fromGas(o) { return /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(o); }
+  window.addEventListener('message', function (e) {
+    if (!fromGas(e.origin) || !e.data || !e.data.standby) return;
+    var d = e.data;
+    try {
+      if (d.standby === 'get') {
+        var c = null;
+        try { c = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (x) {}
+        e.source.postMessage({ standby: 'cred', cred: c }, e.origin);
+      } else if (d.standby === 'save' && d.cred && /^tok:/.test(d.cred.tok || '')) {
+        localStorage.setItem(KEY, JSON.stringify({ phone: String(d.cred.phone), tok: d.cred.tok }));
+      } else if (d.standby === 'clear') {
+        localStorage.removeItem(KEY);
+      }
+    } catch (x) {}
+  });
+
+  // 離線時也能開出外殼與提示，不是一片空白
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+  load();
+</script>
+</body>
+</html>
