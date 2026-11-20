@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 版本：PWA外殼_20261120_1128（1128：網址帶派任單當日代碼 ?d=&k= 時改開「目前待命」查詢頁（顯示姓名電話），派任單 QR 改連 App；2328：App 圖示換成環狀箭頭＋十字＋心電圖（圖示原檔.jpg）；1130：接手報表下載——登記頁傳來 PDF／Excel，顯示「開啟檔案」按鈕；1118：啟動畫面與登入頁一致——院徽 logo＋橘色「轉診待命系統」；logo 改透明底；0921：替登記頁保存「記住我」憑證） -->
+<!-- 版本：PWA外殼_20261120_1147（1147：手機已安裝 App 時，掃 QR 會直接喚起已開著的 App 而不換頁（停在登記頁）→ 接 launchQueue 收到 QR 網址就改開查詢頁；manifest 加 launch_handler；1128：網址帶派任單當日代碼 ?d=&k= 時改開「目前待命」查詢頁（顯示姓名電話），派任單 QR 改連 App；2328：App 圖示換成環狀箭頭＋十字＋心電圖（圖示原檔.jpg）；1130：接手報表下載——登記頁傳來 PDF／Excel，顯示「開啟檔案」按鈕；1118：啟動畫面與登入頁一致——院徽 logo＋橘色「轉診待命系統」；logo 改透明底；0921：替登記頁保存「記住我」憑證） -->
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
@@ -56,11 +56,12 @@
   // 外殼只開「我的待命」登記頁；查詢頁要靠派任單上的當日 QR 才看得到姓名，不放進 App
   var START = GAS_URL + '?page=me';
   // 派任單上的當日 QR 連到 App 並帶 ?d=日期&k=代碼 → 改開查詢頁；代碼由 GAS 驗證，隔天失效
-  (function () {
-    var q = {}, s = location.search.replace(/^\?/, '').split('&');
+  function boardFrom(search) {
+    var q = {}, s = String(search || '').replace(/^\?/, '').split('&');
     for (var i = 0; i < s.length; i++) { var kv = s[i].split('='); q[kv[0]] = decodeURIComponent(kv[1] || ''); }
-    if (/^\d{8}$/.test(q.d || '') && /^[0-9a-f]{8}$/.test(q.k || '')) START = GAS_URL + '?d=' + q.d + '&k=' + q.k;
-  })();
+    return (/^\d{8}$/.test(q.d || '') && /^[0-9a-f]{8}$/.test(q.k || '')) ? GAS_URL + '?d=' + q.d + '&k=' + q.k : '';
+  }
+  START = boardFrom(location.search) || START;
 
   var frame = document.getElementById('app');
   var splash = document.getElementById('splash');
@@ -131,6 +132,15 @@
     box.classList.remove('show'); FILE = null;
   });
   document.getElementById('fileClose').addEventListener('click', function () { box.classList.remove('show'); FILE = null; });
+
+  // 手機已安裝 App（Android Chrome 等）時，掃 QR 會喚起已開著的 App；這裡接住 QR 網址，改開查詢頁
+  if ('launchQueue' in window && window.launchQueue.setConsumer) {
+    window.launchQueue.setConsumer(function (p) {
+      if (!p || !p.targetURL) return;
+      var b = boardFrom(new URL(p.targetURL).search);
+      if (b && b !== START) { START = b; load(); }
+    });
+  }
 
   // 離線時也能開出外殼與提示，不是一片空白
   if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
