@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 版本：PWA外殼_20261117_2328（2328：App 圖示換成環狀箭頭＋十字＋心電圖（圖示原檔.jpg）；1130：接手報表下載——登記頁傳來 PDF／Excel，顯示「開啟檔案」按鈕；1118：啟動畫面與登入頁一致——院徽 logo＋橘色「轉診待命系統」；logo 改透明底；0921：替登記頁保存「記住我」憑證） -->
+<!-- 版本：PWA外殼_20261120_1128（1128：網址帶派任單當日代碼 ?d=&k= 時改開「目前待命」查詢頁（顯示姓名電話），派任單 QR 改連 App；2328：App 圖示換成環狀箭頭＋十字＋心電圖（圖示原檔.jpg）；1130：接手報表下載——登記頁傳來 PDF／Excel，顯示「開啟檔案」按鈕；1118：啟動畫面與登入頁一致——院徽 logo＋橘色「轉診待命系統」；logo 改透明底；0921：替登記頁保存「記住我」憑證） -->
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
@@ -55,6 +55,12 @@
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbzF51OdZM44naHSe0DwNJtS2XdMQAvT7PbL_BG0ezh5F0vaNVyAVAB9vjFGq1858NI/exec';
   // 外殼只開「我的待命」登記頁；查詢頁要靠派任單上的當日 QR 才看得到姓名，不放進 App
   var START = GAS_URL + '?page=me';
+  // 派任單上的當日 QR 連到 App 並帶 ?d=日期&k=代碼 → 改開查詢頁；代碼由 GAS 驗證，隔天失效
+  (function () {
+    var q = {}, s = location.search.replace(/^\?/, '').split('&');
+    for (var i = 0; i < s.length; i++) { var kv = s[i].split('='); q[kv[0]] = decodeURIComponent(kv[1] || ''); }
+    if (/^\d{8}$/.test(q.d || '') && /^[0-9a-f]{8}$/.test(q.k || '')) START = GAS_URL + '?d=' + q.d + '&k=' + q.k;
+  })();
 
   var frame = document.getElementById('app');
   var splash = document.getElementById('splash');
@@ -70,7 +76,7 @@
     // Google Apps Script 第一次開啟常要 3–8 秒，超過 20 秒才當成失敗
     clearTimeout(timer);
     timer = setTimeout(function () { fail('連線較慢或無法連到 Google，請稍後再試。'); }, 20000);
-    frame.src = START + '&t=' + Date.now();
+    frame.src = START + (START.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
   }
   function fail(t) { clearTimeout(timer); msg.textContent = t; retry.style.display = 'inline-block'; }
 
